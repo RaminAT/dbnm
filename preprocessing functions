@@ -1,0 +1,94 @@
+def to_xy(df, target):
+    result = []
+    for x in df.columns:
+        if x != target:
+            result.append(x)
+
+    target_type = df[target].dtypes
+    target_type = target_type[0] if hasattr(
+        target_type, '__iter__') else target_type
+
+    if target_type in (np.int64, np.int32):
+
+        dummies = pd.get_dummies(df[target])
+        return df[result].values.astype(np.float32), dummies.values.astype(np.float32)
+
+    return df[result].values.astype(np.float32), df[[target]].values.astype(np.float32)
+
+
+
+def encode_text_dummy(df, name):
+    dummies = pd.get_dummies(df[name])
+    for x in dummies.columns:
+        dummy_name = f"{name}-{x}"
+        df[dummy_name] = dummies[x]
+    df.drop(name, axis=1, inplace=True)
+
+
+
+def encode_text_index(df, name):
+    le = preprocessing.LabelEncoder()
+    df[name] = le.fit_transform(df[name])
+    return le.classes_
+
+
+
+def encode_numeric_zscore(df, name, mean=None, sd=None):
+    if mean is None:
+        mean = df[name].mean()
+
+    if sd is None:
+        sd = df[name].std()
+
+    df[name] = (df[name] - mean) / sd
+
+
+
+def missing_median(df, name):
+    med = df[name].median()
+    df[name] = df[name].fillna(med)
+
+
+
+def missing_default(df, name, default_value):
+    df[name] = df[name].fillna(default_value)
+
+
+
+
+def hms_string(sec_elapsed):
+    h = int(sec_elapsed / (60 * 60))
+    m = int((sec_elapsed % (60 * 60)) / 60)
+    s = sec_elapsed % 60
+    return f"{h}:{m:>02}:{s:>05.2f}"
+
+
+
+def chart_regression(pred, y, sort=True):
+    t = pd.DataFrame({'pred': pred, 'y': y.flatten()})
+    if sort:
+        t.sort_values(by=['y'], inplace=True)
+    plt.plot(t['y'].tolist(), label='expected')
+    plt.plot(t['pred'].tolist(), label='prediction')
+    plt.ylabel('output')
+    plt.legend()
+    plt.show()
+
+
+def remove_outliers(df, name, sd):
+    drop_rows = df.index[(np.abs(df[name] - df[name].mean())
+                          >= (sd * df[name].std()))]
+    df.drop(drop_rows, axis=0, inplace=True)
+
+
+def encode_numeric_range(df, name, normalized_low=0, normalized_high=1, # -1 or 0 for low
+                         data_low=None, data_high=None):
+    if data_low is None:
+        data_low = min(df[name])
+        data_high = max(df[name])
+
+    df[name] = ((df[name] - data_low) / (data_high - data_low)) \
+        * (normalized_high - normalized_low) + normalized_low
+
+
+print("done loading functions",datetime.now())
