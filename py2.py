@@ -1,3 +1,4 @@
+# Citation Link: https://bit.ly/2GyqlnV
 # -*- coding: utf-8 -*-
 # An implementation of DBN module using python2
 import os
